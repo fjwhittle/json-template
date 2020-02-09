@@ -94,13 +94,13 @@ export default class {
 
       try {
 	let name, key;
-	
+
         try { [, name] = pi.data.match(/\bname="([^"]+)"/) }
-	catch (e) { throw 'No attribute name specified' }
+	catch (e) { throw Error('No attribute name specified') }
 
 	try { [, key]  = pi.data.match(/\bkey="([^"]+)"/) }
-	catch (e) { throw `No attribute key specified for ‘${name}’` }
-	
+	catch (e) { throw Error(`No attribute key specified for ‘${name}’`) }
+
         if (key in data) {
           target.setAttribute(name, data[key]);
         }
