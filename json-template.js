@@ -48,8 +48,13 @@ export default class {
           ch.innerHTML = data[key];
         } else if (data[key] instanceof Array) {
           let frag = new DocumentFragment();
+
           for (let entry of data[key]) {
-            let el = ch.cloneNode(true);
+	    // Clone the node, or its contained Document Fragment (collapse templates)
+            let el =
+		('content' in ch) && (ch.content instanceof DocumentFragment)
+		? ch.content.cloneNode(true)
+		: ch.cloneNode(true);
             if (typeof entry == 'string' || typeof entry == 'number') {
               this.fillAttrs(el, data);
               el.innerHTML = entry;
@@ -58,13 +63,22 @@ export default class {
             }
             frag.appendChild(el);
           }
+
           try {
             ch.parentNode.replaceChild(frag, ch);
           } catch (e) {
             console.error(e.message, ch, ch.parentNode, frag);
           }
         } else if (typeof data[key] == 'object') {
-          this.fillKey(ch, data[key])
+	  // Clone the node, or its contained Document Fragment (collapse templates)
+          let el =
+	      ('content' in ch) && (ch.content instanceof DocumentFragment)
+	      ? ch.content
+	      : ch;
+
+          this.fillKey(el, data[key])
+
+	  ch.parentNode.replaceChild(el, ch);
         }
       } else {
 	children.push(...ch.children);
