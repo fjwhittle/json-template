@@ -11,12 +11,12 @@ export default class {
       return new Promise(async function(resolve, reject) {
         for await (value of data) {
           let item = template.content.cloneNode(true);
-          
+
           this.fillKey(item, value);
-          
+
           target.appendChild(item);
         }
-        
+
         resolve();
       });
     } else {
@@ -88,7 +88,7 @@ export default class {
   }
 
   static fillAttrs (target, data) {
-    for(let pi of Array.from(target.childNodes)
+    for(let pi of [...target.childNodes]
             .filter(n => (n instanceof ProcessingInstruction) && (n.target == 'attr'))
        ) {
 
@@ -108,7 +108,7 @@ export default class {
 	console.warn('Attributes could not be assigned from ', target, pi, ':', e);
       }
     }
-    Array.from(target.attributes).map(attr => {
+    if('attributes' in target) [...target.attributes].map(attr => {
       if(attr.value.match(/\$\{([^}]+)\}/)) {
         attr.value = attr.value.replace(/\$\{([^}]+)\}/g, (all, key) => key in data ? data[key] : all);
       }
