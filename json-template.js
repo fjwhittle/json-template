@@ -116,9 +116,11 @@ export default class {
   }
 
   static init () {
+    let JSONTemplate = this;
+
     document.addEventListener('DOMContentLoaded', function(event) {
       let fetchCache = {};
-  
+
       document.querySelectorAll('[data-source]').forEach(function(target) {
         if(!target.id) {
           throw new Exception('Data source for element with no ID')
@@ -127,15 +129,14 @@ export default class {
         if(!template) {
           throw new Exception(`No template for element with ID ${target.id}`);
         }
-        
+
         if (!(target.dataset.source in fetchCache)) {
           fetchCache[target.dataset.source] = fetch(target.dataset.source, {credentials: 'same-origin'})
             .then((r) => r.json());
         }
-        
-        fetchCache[target.dataset.source].then((data) => this.fill(target, template, data));
+
+        fetchCache[target.dataset.source].then((data) => JSONTemplate.fill(target, template, data));
       });
     })
   }
 }
-    
