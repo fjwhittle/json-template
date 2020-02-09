@@ -35,22 +35,15 @@ export default class {
   }
 
   static fillKey(target, data) {
-    let children = [];
-    let childFunc = function(nodes){
-      for (let child of nodes) {
-        if (child.hasAttribute('data-key'))
-          children.push(child)
-        else
-          childFunc(child.children);
-      }
-    };
-    
-    childFunc(target.children);
+    this.fillAttrs(target, data);
 
-    for (let ch of children) {
-      let key = ch.dataset.key;
+    let children = [...target.children];
+
+    for(let ch of children) {
       this.fillAttrs(ch, data);
-      if (key in data) {
+
+      let key = ch.dataset.key;
+      if (key && key in data) {
         if (typeof data[key] == 'string' || typeof data[key] == 'number') {
           ch.innerHTML = data[key];
         } else if (data[key] instanceof Array) {
@@ -73,6 +66,8 @@ export default class {
         } else if (typeof data[key] == 'object') {
           this.fillKey(ch, data[key])
         }
+      } else {
+	children.push(...ch.children);
       }
     }
     return target;
