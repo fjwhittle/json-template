@@ -75,17 +75,50 @@ class JSONTemplate {
     });
   }
 
+  /**
+   * Recursion entry point to fill a particular node using a data object.
+   *
+   * Meant to be used internally, but could also work for single node replacement, however note that
+   * the target element is altered directly unless the data object is iterable.
+   * Collapses <template>s
+   *
+   * @param {Element} target - element to fill with data
+   * @param {Object|Iterable} data - Iterable data will cause multiple copies of the target element
+   *                                to be cloned.
+   */
   static fillKey(target, data) {
+    /* Create Array out of target's child elements, this will be extended to recurse into
+     * non-matching grandchildren. */
     let children = [...target.children];
 
     for(let ch of children) {
+      /* First fill in the attributes of the child node. */
       this.fillAttrs(ch, data);
 
-      let key = ch.dataset.key;
-      if (key && key in data) {
-        if (typeof data[key] == 'string' || typeof data[key] == 'number') {
+      /* If we're recursing into a slot element we can use its name property, otherwise get the key
+       * from the element's data. */
+      let key = (ch.tagName.toLowerCase() == 'slot' && ch.name)? ch.name : ch.dataset.key;
+
+      /* Only operate on elements that specify a data key. */
+      if (key) {
+	/* Remove the element if the required key is not present. */
+	if (!(key in data)) {
+	  ch.parentNode.removeChild(ch);
+	}
+	/* Replace the element directly if the keyed data is not an object. */
+	else if (!(data[key] instanceof Object)) {
+          let el =
+	      ('content' in ch) && (ch.content instanceof DocumentFragment)
+	      ? ch.content
+	      : ch;
+
           ch.innerHTML = data[key];
-        } else if (data[key] instanceof Array) {
+
+	  ch.parentNode.replaceChild(el, ch);
+        }
+	/* Loop through arrays in the data, recursively filling children. */
+	else if (data[key] instanceof Array) {
+	  /* Fragment to hold all the cloned children. */
           let frag = new DocumentFragment();
 
           for (let entry of data[key]) {
@@ -100,26 +133,33 @@ class JSONTemplate {
             } else {
               this.fillKey(el, entry);
             }
+
+	    /* Add this copy to the containing fragment. */
             frag.appendChild(el);
           }
 
+	  /* Replace the child with fragment. */
           try {
             ch.parentNode.replaceChild(frag, ch);
           } catch (e) {
             console.error(e.message, ch, ch.parentNode, frag);
           }
-        } else if (typeof data[key] == 'object') {
+        }
+	/* Finally, recurse into objects. */
+	else {
 	  // Clone the node, or its contained Document Fragment (collapse templates)
           let el =
 	      ('content' in ch) && (ch.content instanceof DocumentFragment)
 	      ? ch.content
 	      : ch;
 
-          this.fillKey(el, data[key])
+          this.fillKey(el, data[key]);
 
 	  ch.parentNode.replaceChild(el, ch);
         }
-      } else {
+      }
+      /* Add child elements onto the end of the queue when there was no key */
+      else {
 	children.push(...ch.children);
       }
     }
