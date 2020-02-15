@@ -1,38 +1,52 @@
 class JSONTemplate {
+  /**
+   * Use a known template to fill a target Element from object data.
+   *
+   * @param {Element|string} target - Element to add filled template content to. Can be a CSS selector
+   * @param {HTMLTemplateElement|string} template - <template> element to fill. Can be a CSS selector
+   * @param {Iterator|AsyncIterator|Object} data - contains values to replace in the template.
+   * @returns {Promise[Array]} - Promised resolved with an array of added nodes.
+   */
   static fill(target, template, data) {
-    if(typeof target == 'string') {
-      target = document.querySelector(target);
-    }
-    if(typeof template == 'string') {
-      template = document.querySelector(template);
-    }
+    return new Promise(async function(resolve, reject) {
+      /* If target and/or template are specified as a string, use it as a CSS selector to find an element */
+      if(typeof target == 'string') {
+	target = document.querySelector(target);
+      }
+      if(typeof template == 'string') {
+	template = document.querySelector(template);
+      }
 
-    if(typeof data[Symbol.asyncIterator] === 'function') {
-      return new Promise(async function(resolve, reject) {
-        for await (value of data) {
-          let item = template.content.cloneNode(true);
+      /* Make sure we're dealing with appropriate elements. */
+      if(!(target instanceof Element))
+	reject('Target is not an element.');
+      if(!(template instanceof HTMLTemplateElement))
+	reject('Template is not a <template> element.');
 
-          this.fillKey(item, value);
-
-          target.appendChild(item);
-        }
-
-        resolve();
-      });
-    } else {
-      if (typeof data[Symbol.iterator] !== 'function'){
+      /* Put data in an array if it's not already iterable. */
+      if ((typeof data[Symbol.asyncIterator] !== 'function') &&
+	  (typeof data[Symbol.iterator] !== 'function')){
         data = [ data ];
       }
 
-      for (let value of data) {
+      let nodes = [];
+
+      /* data could be asynchronous, so loop through it as such. */
+      for await (let value of data) {
+	/* Copy of the template's DocumentFragment. */
         let item = template.content.cloneNode(true);
 
 	/* Start the filling process on the fragment copy. */
         JSONTemplate.fillKey(item, value);
 
+	nodes.push(...item.childNodes);
+
+	/* Add the filled template to the target */
         target.appendChild(item);
       }
-    }
+
+      resolve(nodes);
+    });
   }
 
   static fillKey(target, data) {
