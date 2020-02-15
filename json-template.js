@@ -1,4 +1,4 @@
-export default class {
+class JSONTemplate {
   static fill(target, template, data) {
     if(typeof target == 'string') {
       target = document.querySelector(target);
@@ -27,7 +27,8 @@ export default class {
       for (let value of data) {
         let item = template.content.cloneNode(true);
 
-        this.fillKey(item, value);
+	/* Start the filling process on the fragment copy. */
+        JSONTemplate.fillKey(item, value);
 
         target.appendChild(item);
       }
@@ -35,8 +36,6 @@ export default class {
   }
 
   static fillKey(target, data) {
-    this.fillAttrs(target, data);
-
     let children = [...target.children];
 
     for(let ch of children) {
@@ -116,8 +115,6 @@ export default class {
   }
 
   static init () {
-    let JSONTemplate = this;
-
     document.addEventListener('DOMContentLoaded', function(event) {
       let fetchCache = {};
 
@@ -140,3 +137,5 @@ export default class {
     })
   }
 }
+
+export default JSONTemplate;
