@@ -168,17 +168,17 @@ class JSONTemplate {
 
   static fillAttrs (target, data) {
     for(let pi of [...target.childNodes]
-            .filter(n => (n instanceof ProcessingInstruction) && (n.target == 'attr'))
+            .filter((n) => (n instanceof ProcessingInstruction) && (n.target == 'attr'))
        ) {
 
       try {
 	let name, key;
 
         try { [, name] = pi.data.match(/\bname="([^"]+)"/) }
-	catch (e) { throw Error('No attribute name specified') }
+	catch (e) { throw 'No attribute name specified' }
 
 	try { [, key]  = pi.data.match(/\bkey="([^"]+)"/) }
-	catch (e) { throw Error(`No attribute key specified for ‘${name}’`) }
+	catch (e) { throw `No attribute key specified for ‘${name}’` }
 
         if (key in data) {
           target.setAttribute(name, data[key]);
@@ -187,9 +187,16 @@ class JSONTemplate {
 	console.warn('Attributes could not be assigned from ', target, pi, ':', e);
       }
     }
-    if('attributes' in target) [...target.attributes].map(attr => {
+    if('attributes' in target) [...target.attributes].map((attr) => {
       if(attr.value.match(/\$\{([^}]+)\}/)) {
-        attr.value = attr.value.replace(/\$\{([^}]+)\}/g, (all, key) => key in data ? data[key] : all);
+        attr.value = attr.value.replace(
+	  /\$\{([^}]+)\}/g,
+	  (all, key) => key
+	    .split('.')
+	    .reduce(
+	      (acc, cur) => ((typeof acc === 'object') && (cur in acc)? acc[cur] : ''),
+	      data
+	    ));
       }
     });
   }
@@ -214,7 +221,7 @@ class JSONTemplate {
 
         fetchCache[target.dataset.source].then((data) => JSONTemplate.fill(target, template, data));
       });
-    })
+    });
   }
 }
 
